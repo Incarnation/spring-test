@@ -3,6 +3,7 @@ package com.example.PhotoAppApiUser.ui.controller;
 import com.example.PhotoAppApiUser.service.UserService;
 import com.example.PhotoAppApiUser.shared.UserDto;
 import com.example.PhotoAppApiUser.ui.model.CreateUserRequestModel;
+import com.example.PhotoAppApiUser.ui.model.CreateUserResponseModel;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,12 +35,14 @@ public class UsersController {
             consumes = { MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE },
             produces = { MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE }
     )
-    public ResponseEntity createUser(@Valid @RequestBody CreateUserRequestModel userDetails){
+    public ResponseEntity<CreateUserResponseModel> createUser(@Valid @RequestBody CreateUserRequestModel userDetails){
         ModelMapper modelMapper = new ModelMapper();
         modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
 
         UserDto userDto = modelMapper.map(userDetails, UserDto.class);
         UserDto createdUser = userService.createUser(userDto);
-        return new ResponseEntity(HttpStatus.CREATED);
+
+        CreateUserResponseModel returnValue = modelMapper.map(createdUser, CreateUserResponseModel.class);
+        return ResponseEntity.status(HttpStatus.CREATED).body(returnValue);
     }
 }
