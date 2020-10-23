@@ -23,6 +23,15 @@ public class WebSecurity extends WebSecurityConfigurerAdapter {
     protected void configure(HttpSecurity http) throws Exception {
         //super.configure(auth);
         http.csrf().disable();
-        http.authorizeRequests().antMatchers("**").hasIpAddress(environment.getProperty("gateway.ip"));
+        http.authorizeRequests().antMatchers("**").hasIpAddress(environment.getProperty("gateway.ip"))
+        .and()
+        .addFilter(getAuthenticationFiler());
+        http.headers().frameOptions().disable();
+    }
+
+    private AuthenticationFilter getAuthenticationFiler() throws Exception {
+        AuthenticationFilter authenticationFilter = new AuthenticationFilter();
+        authenticationFilter.setAuthenticationManager(authenticationManager());
+        return authenticationFilter;
     }
 }
