@@ -1,6 +1,6 @@
 package com.example.PhotoAppApiUser.security;
 
-import com.example.PhotoAppApiUser.service.UserService;
+import com.example.PhotoAppApiUser.service.UsersService;
 import com.example.PhotoAppApiUser.shared.UserDto;
 import com.example.PhotoAppApiUser.ui.model.LoginRequestModel;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -24,44 +24,52 @@ import java.util.Date;
 
 public class AuthenticationFilter extends UsernamePasswordAuthenticationFilter {
 
-    private UserService userService;
+    private UsersService usersService;
     private Environment environment;
 
-    public AuthenticationFilter(UserService userService, Environment environment, AuthenticationManager authenticationManager){
-        super.setAuthenticationManager(authenticationManager);
-        this.userService = userService;
+    public AuthenticationFilter(UsersService usersService,
+                                Environment environment,
+                                AuthenticationManager authenticationManager) {
+        this.usersService = usersService;
         this.environment = environment;
+        super.setAuthenticationManager(authenticationManager);
     }
 
     @Override
-    public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) throws AuthenticationException {
+    public Authentication attemptAuthentication(HttpServletRequest req,
+                                                HttpServletResponse res) throws AuthenticationException {
         try {
-            LoginRequestModel creds = new ObjectMapper().readValue(request.getInputStream(), LoginRequestModel.class);
+
+            LoginRequestModel creds = new ObjectMapper()
+                    .readValue(req.getInputStream(), LoginRequestModel.class);
 
             return getAuthenticationManager().authenticate(
                     new UsernamePasswordAuthenticationToken(
                             creds.getEmail(),
                             creds.getPassword(),
-                            new ArrayList<>()));
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
+                            new ArrayList<>())
+            );
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
     @Override
-    protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain, Authentication authResult) throws IOException, ServletException {
-        super.successfulAuthentication(request, response, chain, authResult);
-
-        String userName = ((User) authResult.getPrincipal()).getUsername();
-        UserDto userDetails = userService.getUserDetailsByEmail(userName);
+    protected void successfulAuthentication(HttpServletRequest req,
+                                            HttpServletResponse res,
+                                            FilterChain chain,
+                                            Authentication auth) throws IOException, ServletException {
+        String userName = ((User) auth.getPrincipal()).getUsername();
+        UserDto userDetails = usersService.getUserDetailsByEmail(userName);
 
         String token = Jwts.builder()
                 .setSubject(userDetails.getUserId())
                 .setExpiration(new Date(System.currentTimeMillis() + Long.parseLong(environment.getProperty("token.expiration_time"))))
-                .signWith(SignatureAlgorithm.HS512, environment.getProperty("token.secret"))
+                .signWith(SignatureAlgorithm.HS512, environment.getProperty("token.secret") )
                 .compact();
 
-        response.addHeader("token", token);
-        response.addHeader("userId", userDetails.getUserId());
+        res.addHeader("token", token);
+        res.addHeader("userId", userDetails.getUserId());
     }
 }

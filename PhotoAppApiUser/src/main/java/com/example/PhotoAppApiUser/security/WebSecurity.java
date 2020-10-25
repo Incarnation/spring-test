@@ -1,6 +1,6 @@
 package com.example.PhotoAppApiUser.security;
 
-import com.example.PhotoAppApiUser.service.UserService;
+import com.example.PhotoAppApiUser.service.UsersService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
@@ -15,29 +15,29 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 public class WebSecurity extends WebSecurityConfigurerAdapter {
 
     private Environment environment;
-    private UserService userService;
+    private UsersService usersService;
     private BCryptPasswordEncoder bCryptPasswordEncoder;
 
     @Autowired
-    public WebSecurity(Environment environment, UserService userService, BCryptPasswordEncoder bCryptPasswordEncoder){
-
+    public WebSecurity(Environment environment, UsersService usersService, BCryptPasswordEncoder bCryptPasswordEncoder)
+    {
         this.environment = environment;
-        this.userService = userService;
+        this.usersService = usersService;
         this.bCryptPasswordEncoder = bCryptPasswordEncoder;
     }
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        //super.configure(auth);
         http.csrf().disable();
         http.authorizeRequests().antMatchers("/**").hasIpAddress(environment.getProperty("gateway.ip"))
-        .and()
-        .addFilter(getAuthenticationFiler());
+                .and()
+                .addFilter(getAuthenticationFilter());
         http.headers().frameOptions().disable();
     }
 
-    private AuthenticationFilter getAuthenticationFiler() throws Exception {
-        AuthenticationFilter authenticationFilter = new AuthenticationFilter(userService, environment, authenticationManager());
+    private AuthenticationFilter getAuthenticationFilter() throws Exception
+    {
+        AuthenticationFilter authenticationFilter = new AuthenticationFilter(usersService, environment, authenticationManager());
         //authenticationFilter.setAuthenticationManager(authenticationManager());
         authenticationFilter.setFilterProcessesUrl(environment.getProperty("login.url.path"));
         return authenticationFilter;
@@ -45,6 +45,6 @@ public class WebSecurity extends WebSecurityConfigurerAdapter {
 
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-        auth.userDetailsService(userService).passwordEncoder(bCryptPasswordEncoder);
+        auth.userDetailsService(usersService).passwordEncoder(bCryptPasswordEncoder);
     }
 }
